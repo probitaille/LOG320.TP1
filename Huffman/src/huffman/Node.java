@@ -3,14 +3,14 @@ package huffman;
 @SuppressWarnings("rawtypes")
 public class Node implements Comparable
 {
-	private byte character;
+	private String character;
 	private int frequency;
 	private Node leftBranch;
 	private Node rightBranch;
 	
 	public Node(byte character, int frequency, Node leftBranch, Node rightBranch)
 	{
-		this.character = character;
+		this.character = Integer.toString(character);
 		this.frequency = frequency;
 		this.leftBranch = leftBranch;
 		this.rightBranch = rightBranch;
@@ -18,7 +18,7 @@ public class Node implements Comparable
 	
 	public Node(byte character, int frequency)
 	{
-		this.character = character;
+		this.character = Integer.toString(character);
 		this.frequency = frequency;
 		this.leftBranch = null;
 		this.rightBranch = null;
@@ -26,11 +26,16 @@ public class Node implements Comparable
 		
 	public Node(Node leftBranch, Node rightBranch)
 	{
-		//TODO check char fusion
-		if (leftBranch.getCharacter() < rightBranch.getCharacter())
-			this.character = leftBranch.getCharacter();
+		String templ, tempr;
+		if (leftBranch.getCharacter().length() == 2)
+			templ = '0' + leftBranch.getCharacter();
 		else
-			this.character = rightBranch.getCharacter();
+			templ = leftBranch.getCharacter();
+		if (rightBranch.getCharacter().length() == 2)
+			tempr = '0' + rightBranch.getCharacter();
+		else
+			tempr = rightBranch.getCharacter();
+		this.character = templ.concat(tempr);
 		this.frequency = leftBranch.getFrequency() + rightBranch.getFrequency();
 		this.leftBranch = leftBranch;
 		this.rightBranch = rightBranch;
@@ -38,11 +43,11 @@ public class Node implements Comparable
 	
 	public int compareTo(Object arg)
     {
-            Node other = (Node) arg;
-            if (this.frequency == other.frequency)
-                    return this.character-other.character;
-            else
-                    return this.frequency-other.frequency;
+		Node other = (Node) arg;
+		if (this.frequency == other.frequency)
+			return this.character.compareTo(other.character);
+		else
+			return this.frequency-other.frequency;
     }
 	
 	private boolean isLeaf()
@@ -63,7 +68,7 @@ public class Node implements Comparable
 			rightBranch.printPath(path + '1');
 	}
 
-	public byte getCharacter()
+	public String getCharacter()
 	{
 		return character;
 	}

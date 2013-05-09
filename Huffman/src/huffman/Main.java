@@ -6,7 +6,7 @@ public class Main {
 	{
 		long startTime = System.currentTimeMillis();
 		args = new String[1];
-		args[0] = "-";
+		args[0] = "-e";
 		if (args[0] == "-e")
 		{
 			new Huffman().encrypt("C:\\test.txt");

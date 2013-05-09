@@ -38,16 +38,15 @@ public class Huffman
         for(Map.Entry<Byte, Integer> entry : sortedFreqDic.entrySet())
         	  tree.add(new huffman.Node(entry.getKey(), entry.getValue(), null, null));
 
-        //TODO revoir l'algo de creation de l'arbre
         while (tree.size() > 1)
         {
-            Node tempNode1 = (Node) tree.first();
-            tree.remove(tempNode1);
-            Node tempNode2 = (Node) tree.first();
-            tree.remove(tempNode2);
+            Node childNode1 = (Node) tree.first();
+            tree.remove(childNode1);
+            Node childNode2 = (Node) tree.first();
+            tree.remove(childNode2);
 
-            Node merged = new Node(tempNode1, tempNode2);
-            tree.add(merged);
+            Node parent = new Node(childNode1, childNode2);
+            tree.add(parent);
         }
         
         return tree;
