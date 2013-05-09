@@ -1,18 +1,19 @@
-package huffman;
+package Main;
+
+import Huffman.Encoding;
+import Huffman.Decoding;
 
 public class Main {
-
-	public static void main(String[] args) 
-	{
+	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
 		args = new String[1];
 		args[0] = "-e";
 		if (args[0] == "-e")
 		{
-			new Huffman().encrypt("C:\\test.txt");
+			new Encoding().encrypt("C:\\test.txt");
 		} else if (args[0] == "-d")
 		{
-			new Huffman().decrypt("C:\\test.txt");
+			new Decoding().decrypt("C:\\test.txt");
 		}
 		else
 		{

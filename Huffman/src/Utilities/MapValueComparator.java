@@ -1,4 +1,4 @@
-package huffman;
+package Utilities;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -20,3 +20,4 @@ public class MapValueComparator implements Comparator<Byte>
 			return 1;
 	}	
 }
+
