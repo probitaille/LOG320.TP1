@@ -1,6 +1,6 @@
 package huffman;
 
-@SuppressWarnings({ "unused", "rawtypes" })
+@SuppressWarnings("rawtypes")
 public class Node implements Comparable
 {
 	private byte character;
@@ -26,6 +26,7 @@ public class Node implements Comparable
 		
 	public Node(Node leftBranch, Node rightBranch)
 	{
+		//TODO check char fusion
 		if (leftBranch.getCharacter() < rightBranch.getCharacter())
 			this.character = leftBranch.getCharacter();
 		else
@@ -44,12 +45,22 @@ public class Node implements Comparable
                     return this.frequency-other.frequency;
     }
 	
-	private boolean isLeaf(Node n)
+	private boolean isLeaf()
 	{
-		if (n.getLeftBranch() == null && n.getRightBranch() == null)
+		if (getLeftBranch() == null && getRightBranch() == null)
 			return false;
 		else
 			return true;
+	}
+	
+	public void printPath(String path)
+	{
+		if (isLeaf())
+			System.out.println(getCharacter() + " " + path);
+		if (leftBranch != null)
+			leftBranch.printPath(path + '0');
+		if (rightBranch != null)
+			rightBranch.printPath(path + '1');
 	}
 
 	public byte getCharacter()

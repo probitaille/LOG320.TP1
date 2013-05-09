@@ -2,6 +2,7 @@ package huffman;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -16,12 +17,14 @@ public class Huffman
 {
 	public void encrypt(String path)
 	{
+		TreeSet<Node> tree;
 		HashMap<Byte, Integer> freqDic = new HashMap<Byte, Integer>();
 		freqDic = readFile(path);
 		MapValueComparator mvc = new MapValueComparator(freqDic);
 		TreeMap<Byte, Integer> sortedFreqDic = new TreeMap<Byte, Integer>(mvc);
 		sortedFreqDic.putAll(freqDic);
-		buildTree(sortedFreqDic);
+		tree = buildTree(sortedFreqDic);
+		tree.first().printPath("");
 	}
 	
 	public void decrypt(String path)
@@ -35,6 +38,7 @@ public class Huffman
         for(Map.Entry<Byte, Integer> entry : sortedFreqDic.entrySet())
         	  tree.add(new huffman.Node(entry.getKey(), entry.getValue(), null, null));
 
+        //TODO revoir l'algo de creation de l'arbre
         while (tree.size() > 1)
         {
             Node tempNode1 = (Node) tree.first();
@@ -91,5 +95,19 @@ public class Huffman
 			e.printStackTrace();
 		}
 		return freqDic;
+	}
+	
+	private static void writeFile(String path, byte[] data)
+	{
+		FileOutputStream fos;
+		try {
+			fos = new FileOutputStream(path);
+			fos.write(data, 0, data.length);
+			fos.flush();
+			fos.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
