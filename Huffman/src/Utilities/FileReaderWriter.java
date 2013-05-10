@@ -1,5 +1,6 @@
 package Utilities;
 
+import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -60,7 +61,7 @@ public class FileReaderWriter {
 	{
 		ObjectOutputStream fos;
 		try {
-			fos = new ObjectOutputStream(new FileOutputStream(path));
+			fos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(path)));
 			fos.writeObject(header);
 			fos.writeChar(59);
 			fos.write(data);
