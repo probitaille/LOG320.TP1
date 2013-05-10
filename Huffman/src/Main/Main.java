@@ -6,14 +6,20 @@ import Huffman.Decoding;
 public class Main {
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
-		args = new String[1];
+		//temp var
+		args = new String[2];
 		args[0] = "-e";
+		args[1] = "C:\\Users\\Marc-Andre\\Desktop\\test.txt";
+		//--------
 		if (args[0] == "-e")
 		{
-			new Encoding().encrypt("C:\\test.txt");
-		} else if (args[0] == "-d")
+			System.out.println("Encrypt : " + args[1]);
+			new Encoding().encrypt(args[1]);
+		} 
+		else if (args[0] == "-d")
 		{
-			new Decoding().decrypt("C:\\test.txt");
+			System.out.println("Decrypt : " + args[1]);
+			new Decoding().decrypt(args[1]);
 		}
 		else
 		{

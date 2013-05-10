@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
@@ -11,14 +12,14 @@ import java.util.HashMap;
 public class FileReaderWriter {
     //reading file based on
     //http://nadeausoftware.com/articles/2008/02/java_tip_how_read_files_quickly
-	public static HashMap<Byte, Integer> readFile(String path)
+	public static Object[] readFile(String path)
 	{
 		HashMap<Byte, Integer> freqDic = new HashMap<Byte, Integer>();
 		FileInputStream fis = null;
+		String str = "";
 		try {
 			fis = new FileInputStream(path);
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		FileChannel ch = fis.getChannel( );
@@ -26,7 +27,6 @@ public class FileReaderWriter {
 		try {
 			bb = ByteBuffer.allocateDirect((int)ch.size());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		int nRead;
@@ -38,6 +38,7 @@ public class FileReaderWriter {
 				while (bb.hasRemaining())
 				{
 					byte temp = bb.get();
+					str += String.valueOf((char) temp);
 					if (freqDic.containsKey(temp))
 						freqDic.put(temp, freqDic.get(temp) + 1);
 					else
@@ -47,22 +48,25 @@ public class FileReaderWriter {
 			}
 			fis.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return freqDic;
+		Object[] o = new Object[2];
+		o[0] = freqDic;
+		o[1] = str;
+		return o;
 	}
 	
-	public static void writeFile(String path, byte[] data)
+	public static void writeFile(String path, byte[] data, Object header)
 	{
-		FileOutputStream fos;
+		ObjectOutputStream fos;
 		try {
-			fos = new FileOutputStream(path);
-			fos.write(data, 0, data.length);
+			fos = new ObjectOutputStream(new FileOutputStream(path));
+			fos.writeObject(header);
+			fos.writeChar(59);
+			fos.write(data);
 			fos.flush();
 			fos.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

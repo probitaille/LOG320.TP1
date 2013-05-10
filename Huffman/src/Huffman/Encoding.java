@@ -1,8 +1,5 @@
 package Huffman;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayDeque;
 import java.util.Map;
@@ -12,15 +9,22 @@ import Utilities.FileReaderWriter;
 import Utilities.MapValueComparator;
 
 public class Encoding {
+	private static HashMap<String, String> codestr = new HashMap<String, String>();
+	private static String txtstr = "";
+	
 	public void encrypt(String path)
-	{
-		HashMap<Byte, Integer> freqDic = FileReaderWriter.readFile(path);
+	{ 
+		Object[] o = FileReaderWriter.readFile(path);
+		@SuppressWarnings("unchecked")
+		HashMap<Byte, Integer> freqDic = (HashMap<Byte, Integer>) o[0];
+		txtstr = (String) o[1];
 		MapValueComparator mvc = new MapValueComparator(freqDic);
 		TreeMap<Byte, Integer> sortedFreqDic = new TreeMap<Byte, Integer>(mvc);
 		sortedFreqDic.putAll(freqDic);
 		Tree tree = createTree(sortedFreqDic);
-		HashMap<String, String> codestr = createTreeCode(tree, ""); // TODO return overwrite le dernier codestr
-		encodeDocument(path, codestr);
+		createTreeCode(tree, "");
+		byte[] encStr = encodeDocument(txtstr);
+		FileReaderWriter.writeFile(path + ".bin", encStr, codestr);
 	}
 	
 	private Tree createTree(TreeMap<Byte, Integer> sortedFreqDic)
@@ -40,11 +44,8 @@ public class Encoding {
         return tree.element();
 	}
 	
-	// TODO return overwrite le dernier codestr
-	private HashMap<String, String> createTreeCode(Tree tree, String code)
-	{
-		HashMap<String, String> codestr = new HashMap<String, String>();
-		
+	private void createTreeCode(Tree tree, String code)
+	{	
 		if (tree instanceof Node)
 		{
 			Node node = (Node) tree;
@@ -58,29 +59,15 @@ public class Encoding {
 			Leaf leaf = (Leaf) tree;
 			codestr.put(String.valueOf(leaf.getCharacter()), code);
 		}
-		
-		return codestr;
 	}
 	
-	private byte[] encodeDocument(String path, HashMap<String, String> codestr)
+	private byte[] encodeDocument(String path)
 	{
+		char[] c = path.toCharArray();
 		String str = "";
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(new File(path));		
-			int content;
-			while ((content = fis.read()) != -1) {
-				str += codestr.get((char) content);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (fis != null)
-					fis.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		for(char content : c)
+		{
+			str += codestr.get(String.valueOf((char) content));
 		}
 		return str.getBytes();
 	}
