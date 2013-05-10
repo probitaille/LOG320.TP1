@@ -24,7 +24,7 @@ public class Encoding {
 		Tree tree = createTree(sortedFreqDic);
 		createTreeCode(tree, "");
 		byte[] encStr = encodeDocument(txtstr);
-		FileReaderWriter.writeFile(path + ".bin", encStr, codestr);
+		FileReaderWriter.writeFileBin(path + ".bin", encStr, tree);
 	}
 	
 	private Tree createTree(TreeMap<Byte, Integer> sortedFreqDic)

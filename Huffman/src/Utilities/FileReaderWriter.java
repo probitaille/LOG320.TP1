@@ -57,7 +57,7 @@ public class FileReaderWriter {
 		return o;
 	}
 	
-	public static void writeFile(String path, byte[] data, Object header)
+	public static void writeFileBin(String path, byte[] data, Object header)
 	{
 		ObjectOutputStream fos;
 		try {
