@@ -1,7 +1,10 @@
 package Tree;
 
-public abstract class Tree implements Comparable<Tree>  
+import java.io.Serializable;
+
+public abstract class Tree implements Comparable<Tree>, Serializable
 {
+	private static final long serialVersionUID = 8340917866747573270L;
 	private int frequency;
 	
 	public Tree(int frequency)

@@ -2,6 +2,7 @@ package Tree;
 
 public class Node extends Tree 
 {
+	private static final long serialVersionUID = 5408698763868611692L;
 	private Tree leftBranch;
 	private Tree rightBranch;
 	
