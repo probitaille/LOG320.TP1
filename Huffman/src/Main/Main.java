@@ -8,8 +8,8 @@ public class Main {
 		long startTime = System.currentTimeMillis();
 		//temp var
 		args = new String[2];
-		args[0] = "-e";
-		args[1] = "C:\\Users\\Marc-Andre\\Desktop\\test.txt";
+		args[0] = "-d";
+		args[1] = "C:\\Users\\Samuel\\Desktop\\patate\\jambon.txt.bin";
 		//--------
 		if (args[0] == "-e")
 		{

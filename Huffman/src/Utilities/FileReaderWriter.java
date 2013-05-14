@@ -63,7 +63,6 @@ public class FileReaderWriter {
 		try {
 			fos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(path)));
 			fos.writeObject(header);
-			fos.writeChar(59);
 			fos.write(data);
 			fos.flush();
 			fos.close();
