@@ -13,9 +13,18 @@ public class TP1 {
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
 		
-		String path = "C:\\Users\\Samuel\\Desktop\\carotte\\rambo2.txt";
+		String path = "C:\\Users\\Samuel\\Desktop\\carotte\\rambo.txt";
 		
-		//CompressHelper.getInstance().CompressFile(path);
+		//int i = 112;
+		//Character v = (char)i;
+		//System.out.println(v);
+		
+		//System.out.println(String.format("%08d", Integer.parseInt("11111")));
+		//System.out.println("00000000".substring("11111".length())+"11111");
+		
+		//System.out.println(((int)(byte)112) & 0xFF);
+		
+		CompressHelper.getInstance().CompressFile(path);
 		CompressHelper.getInstance().DecompressFile(path + ".huf");
 		
 		long endTime = System.currentTimeMillis();

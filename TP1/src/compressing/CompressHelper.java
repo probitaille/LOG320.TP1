@@ -21,6 +21,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import java.util.Arrays;
 
+import tree.Leaf;
+import tree.Node;
 import tree.Tree;
 import tree.TreeHelper;
 
@@ -30,6 +32,8 @@ import file.FileHelper;
 public class CompressHelper {
 	
 	private static CompressHelper instance;
+	private int paddingBits;
+	private static final int HEADER_SIZE = 257;
 	
 	private CompressHelper() {
 	}
@@ -72,17 +76,17 @@ public class CompressHelper {
 		
 		System.out.println("All : " + fileBArray.length);
 		
-		decodeHeader(fileBArray);
-		decodeText(fileBArray);
-		/*String bob = decompress(fileBArray);
-		System.out.println(bob);
+		TreeMap<Character, Integer> sortedFrequencyTable = decodeHeader(fileBArray);
+		Tree tree = TreeHelper.getInstance().createTree(sortedFrequencyTable);
+		String text = decodeText(fileBArray, tree);
+		System.out.println(text);
 		try {
-			BufferedWriter out = new BufferedWriter(new FileWriter(path + ".huf.txt"));
-			out.write(bob);
+			BufferedWriter out = new BufferedWriter(new FileWriter(path + ".txt"));
+			out.write(text);
 			out.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}*/
+		}
 	}
 	
 	private TreeMap<Character, Integer> getSortedFrequencyTable(String text) {
@@ -138,6 +142,7 @@ public class CompressHelper {
 			
 			if (currentByte.length() == 8 || i == encodedTextBits.length() - 1) {
 				stringBits.add(currentByte);
+				this.paddingBits = 8 - currentByte.length();
 				currentByte = "";
 			}
 		}
@@ -151,28 +156,64 @@ public class CompressHelper {
 		return encodedTextBytes;
 	}
 	
-	private String decodeText(byte[] encodedText) {
-		/*System.out.println("-----------------------------------------");
+	private String decodeText(byte[] encodedTextBytes, Tree tree) {
+		StringBuilder sbEncodedText = new StringBuilder();
+		StringBuilder sbText = new StringBuilder();
+		String padString = "00000000";
+		String encodedTextPart = "";
+		String encodedText = "";
+		String text = "";
 		
-		System.out.println((int)encodedText[256]);
-		System.out.println((int)encodedText[257]);
-		System.out.println((int)encodedText[258]);
-		System.out.println((int)encodedText[259]);
-		System.out.println((int)encodedText[260]);
-		System.out.println((int)encodedText[261]);
-		System.out.println(Integer.toBinaryString((int)encodedText[256]));
-		System.out.println(Integer.toBinaryString((int)encodedText[257]));
-		System.out.println(Integer.toBinaryString((int)encodedText[258]));
-		System.out.println(Integer.toBinaryString((int)encodedText[259]));
-		System.out.println(Integer.toBinaryString((int)encodedText[260]));
-		System.out.println(Integer.toBinaryString((int)encodedText[261]));*/
+		for (int i = HEADER_SIZE; i != encodedTextBytes.length; ++i) {
+			encodedTextPart = Integer.toBinaryString(encodedTextBytes[i] & 0xFF);
+			if (i != encodedTextBytes.length - 1) {
+				sbEncodedText.append(padString.substring(encodedTextPart.length()));
+			} else {
+				sbEncodedText.append(padString.substring(encodedTextPart.length()+this.paddingBits));
+			}
+			sbEncodedText.append(encodedTextPart);
+		}
 		
-		return null;
+		encodedText = sbEncodedText.toString();
+		System.out.println(encodedText);
+		
+		if (tree instanceof Node) {
+			Node currentNode = (Node)tree;
+			
+			for (int i = 0; i != encodedText.length(); ++i) {
+				if (encodedText.charAt(i) == '0') {
+					if (currentNode.getLeftBranch() instanceof Node) {
+						currentNode = (Node)currentNode.getLeftBranch();
+					} else if (currentNode.getLeftBranch() instanceof Leaf) {
+						sbText.append(((Leaf)currentNode.getLeftBranch()).getCharacter());
+						currentNode = (Node)tree;
+					}
+				} else if (encodedText.charAt(i) == '1') {
+					if (currentNode.getRightBranch() instanceof Node) {
+						currentNode = (Node)currentNode.getRightBranch();
+					} else if (currentNode.getRightBranch() instanceof Leaf) {
+						sbText.append(((Leaf)currentNode.getRightBranch()).getCharacter());
+						currentNode = (Node)tree;
+					}
+				}
+				
+			}
+		} else if (tree instanceof Leaf) {
+			Leaf currentLeaf = (Leaf)tree;
+			
+			for (int i = 0; i != encodedText.length(); ++i) {
+				sbText.append(currentLeaf.getCharacter());
+			}
+		}
+		
+		text = sbText.toString();
+		System.out.println(text);
+		
+		return text;
 	}
 	
 	private byte[] encodeHeader(TreeMap<Character, Integer> sortedFrequencyTable) {
-		int arraySize = 256;
-		int[] headerInt = new int[arraySize];
+		int[] headerInt = new int[HEADER_SIZE-1];
 		Arrays.fill(headerInt, 0);
 		
 		for (Map.Entry<Character, Integer> entry : sortedFrequencyTable.entrySet()) {
@@ -187,32 +228,36 @@ public class CompressHelper {
 			}
 		}
 		
-		byte[] headerBytes = new byte[arraySize];
+		byte[] headerBytes = new byte[HEADER_SIZE];
 		
-		for (int i = 0; i != arraySize; ++i) {
+		for (int i = 0; i != HEADER_SIZE - 1; ++i) {
 			headerBytes[i] = (byte)headerInt[i];
 		}
+		
+		headerBytes[HEADER_SIZE-1] = (byte)this.paddingBits;
 		
 		return headerBytes;
 	}
 	
 	private TreeMap<Character, Integer> decodeHeader(byte[] encodedHeader) {
-		int arraySize = 256;
-		int[] headerInt = new int[arraySize];
+		HashMap<Character, Integer> frequencyTable = new HashMap<Character, Integer>();
+		int value = 0;
 		
-		for (int i = 0; i != arraySize; ++i) {
-			headerInt[i] = encodedHeader[i];
-		}
-		
-		System.out.println("-----------------------------------------\r\n");
-		
-		for (int i = 0; i != headerInt.length; ++i) {
-			if (headerInt[i] != 0) {
-				System.out.print(headerInt[i] + " ");
+		for (int i = 0; i != HEADER_SIZE - 1; ++i) {
+			if ((value = encodedHeader[i] & 0xFF) != 0) {
+				frequencyTable.put((char)i, value);
 			}
 		}
 		
-		return null;
+		MapValueComparator mapValueComparator = new MapValueComparator(frequencyTable);
+		TreeMap<Character, Integer> sortedFrequencyTable = new TreeMap<Character, Integer>(mapValueComparator);
+		sortedFrequencyTable.putAll(frequencyTable);
+		
+		System.out.println(sortedFrequencyTable);
+		
+		this.paddingBits = encodedHeader[HEADER_SIZE - 1] & 0xFF;
+		
+		return sortedFrequencyTable;
 	}
 	
 	//http://stackoverflow.com/questions/10572398/how-can-i-easily-compress-and-decompress-strings-to-from-byte-arrays
