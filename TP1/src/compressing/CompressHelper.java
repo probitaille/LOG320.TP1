@@ -1,24 +1,9 @@
 package compressing;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 import java.util.Arrays;
 
 import tree.Leaf;
@@ -33,7 +18,7 @@ public class CompressHelper {
 	
 	private static CompressHelper instance;
 	private int paddingBits;
-	private static final int HEADER_SIZE = 257;
+	private int encodedFileTextBeginIndex;
 	
 	private CompressHelper() {
 	}
@@ -48,45 +33,26 @@ public class CompressHelper {
 	
 	public void CompressFile(String path) {
 		String text = FileHelper.getInstance().readTextFile(path);
+		
 		TreeMap<Character, Integer> sortedFrequencyTable = this.getSortedFrequencyTable(text);
-		System.out.println(sortedFrequencyTable);
+		
 		Tree tree = TreeHelper.getInstance().createTree(sortedFrequencyTable);
+		
 		HashMap<Character, String> charCodes = TreeHelper.getInstance().getCharCodes(tree);
+		
 		byte[] encodedText = encodeText(text, charCodes);
+		
 		byte[] encodedHeader = encodeHeader(sortedFrequencyTable);
-		System.out.println("Text : " + encodedText.length);
-		System.out.println("Header : " + encodedHeader.length);
+		
 		FileHelper.getInstance().writeToByteFile(path + ".huf", encodedHeader, encodedText);
 	}
 	
 	public void DecompressFile(String path) {
-		//byte[] fileContent = FileHelper.getInstance()
-		
-		File file = new File(path);
-		byte[] fileBArray = new byte[(int)file.length()];
-		FileInputStream fis;
-		try {
-			fis = new FileInputStream(file);
-			fis.read(fileBArray);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		System.out.println("All : " + fileBArray.length);
-		
-		TreeMap<Character, Integer> sortedFrequencyTable = decodeHeader(fileBArray);
+		byte[] encodedFileContent = FileHelper.getInstance().readByteFile(path);
+		TreeMap<Character, Integer> sortedFrequencyTable = decodeHeader(encodedFileContent);
 		Tree tree = TreeHelper.getInstance().createTree(sortedFrequencyTable);
-		String text = decodeText(fileBArray, tree);
-		System.out.println(text);
-		try {
-			BufferedWriter out = new BufferedWriter(new FileWriter(path + ".txt"));
-			out.write(text);
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		String text = decodeText(encodedFileContent, tree);
+		FileHelper.getInstance().writeToTextFile(path + ".txt", text);
 	}
 	
 	private TreeMap<Character, Integer> getSortedFrequencyTable(String text) {
@@ -108,42 +74,24 @@ public class CompressHelper {
 	}
 	
 	private byte[] encodeText(String text, HashMap<Character, String> charCodes) {
-		/*byte[] encodedText = new byte[text.length()];
-		
-		for (int i = 0; i != text.length(); ++i) {
-			System.out.println(charCodes.get(text.charAt(i)));
-			encodedText[i] = (byte)Integer.parseInt(charCodes.get(text.charAt(i)), 2);
-		}*/
-		
-		//byte[] encodedText = null;
-		/*String encodedTextString = "";
-		for (int i = 0; i != text.length(); ++i) {
-			System.out.println(charCodes.get(text.charAt(i)));
-			encodedTextString += charCodes.get(text.charAt(i));
-		}
-		
-		byte[] encodedText = {(byte)Integer.parseInt(encodedTextString, 2)};
-		
-		return encodedText;*/
-		
 		String encodedTextBits = "";
+		StringBuffer sbEncodedTextBits = new StringBuffer();
 		
 		for (int i = 0; i != text.length(); ++i) {
-			encodedTextBits += charCodes.get(text.charAt(i));
+			sbEncodedTextBits.append(charCodes.get(text.charAt(i)));
 		}
-		
-		System.out.println(encodedTextBits);
+		encodedTextBits = sbEncodedTextBits.toString();
 		
 		ArrayList<String> stringBits = new ArrayList<String>();
-		String currentByte = "";
+		StringBuffer sbEncodedTextBytes = new StringBuffer();
 		
 		for (int i = 0; i != encodedTextBits.length(); ++i) {
-			currentByte += encodedTextBits.charAt(i);
+			sbEncodedTextBytes.append(encodedTextBits.charAt(i));
 			
-			if (currentByte.length() == 8 || i == encodedTextBits.length() - 1) {
-				stringBits.add(currentByte);
-				this.paddingBits = 8 - currentByte.length();
-				currentByte = "";
+			if (sbEncodedTextBytes.length() == 8 || i == encodedTextBits.length() - 1) {
+				stringBits.add(sbEncodedTextBytes.toString());
+				this.paddingBits = 8 - sbEncodedTextBytes.length();
+				sbEncodedTextBytes.delete(0, sbEncodedTextBytes.length());
 			}
 		}
 		
@@ -156,7 +104,7 @@ public class CompressHelper {
 		return encodedTextBytes;
 	}
 	
-	private String decodeText(byte[] encodedTextBytes, Tree tree) {
+	private String decodeText(byte[] encodedFileContent, Tree tree) {
 		StringBuilder sbEncodedText = new StringBuilder();
 		StringBuilder sbText = new StringBuilder();
 		String padString = "00000000";
@@ -164,9 +112,9 @@ public class CompressHelper {
 		String encodedText = "";
 		String text = "";
 		
-		for (int i = HEADER_SIZE; i != encodedTextBytes.length; ++i) {
-			encodedTextPart = Integer.toBinaryString(encodedTextBytes[i] & 0xFF);
-			if (i != encodedTextBytes.length - 1) {
+		for (int i = this.encodedFileTextBeginIndex; i != encodedFileContent.length; ++i) {
+			encodedTextPart = Integer.toBinaryString(encodedFileContent[i] & 0xFF);
+			if (i != encodedFileContent.length - 1) {
 				sbEncodedText.append(padString.substring(encodedTextPart.length()));
 			} else {
 				sbEncodedText.append(padString.substring(encodedTextPart.length()+this.paddingBits));
@@ -175,7 +123,6 @@ public class CompressHelper {
 		}
 		
 		encodedText = sbEncodedText.toString();
-		System.out.println(encodedText);
 		
 		if (tree instanceof Node) {
 			Node currentNode = (Node)tree;
@@ -207,83 +154,111 @@ public class CompressHelper {
 		}
 		
 		text = sbText.toString();
-		System.out.println(text);
 		
 		return text;
 	}
 	
 	private byte[] encodeHeader(TreeMap<Character, Integer> sortedFrequencyTable) {
-		int[] headerInt = new int[HEADER_SIZE-1];
+		int[] headerInt = new int[256];
 		Arrays.fill(headerInt, 0);
 		
 		for (Map.Entry<Character, Integer> entry : sortedFrequencyTable.entrySet()) {
 			headerInt[(byte)(char)entry.getKey()] = entry.getValue();
 		}
 		
-		System.out.println("-----------------------------------------\r\n");
+		String charInFileBits = "";
+		String padString = "00000000000000000000000000000000";
+		StringBuilder sbCharInFileBits = new StringBuilder();
+		StringBuilder sbCharFrequencyInFileBits = new StringBuilder();
+		String frequencyBits = "";
 		
 		for (int i = 0; i != headerInt.length; ++i) {
-			if (headerInt[i] != 0) {
-				System.out.print(headerInt[i] + " ");
+			if (headerInt[i] == 0) {
+				sbCharInFileBits.append('0');
+			} else {
+				sbCharInFileBits.append('1');
+				frequencyBits = Integer.toBinaryString(headerInt[i]);
+				sbCharFrequencyInFileBits.append(padString.substring(frequencyBits.length()));
+				sbCharFrequencyInFileBits.append(frequencyBits);
 			}
 		}
 		
-		byte[] headerBytes = new byte[HEADER_SIZE];
+		charInFileBits = sbCharInFileBits.append(sbCharFrequencyInFileBits.toString()).toString();
 		
-		for (int i = 0; i != HEADER_SIZE - 1; ++i) {
-			headerBytes[i] = (byte)headerInt[i];
+		ArrayList<String> stringBits = new ArrayList<String>();
+		StringBuffer sbEncodedTextBytes = new StringBuffer();
+		
+		for (int i = 0; i != charInFileBits.length(); ++i) {
+			sbEncodedTextBytes.append(charInFileBits.charAt(i));
+			
+			if (sbEncodedTextBytes.length() == 8 || i == charInFileBits.length() - 1) {
+				stringBits.add(sbEncodedTextBytes.toString());
+				sbEncodedTextBytes.delete(0, sbEncodedTextBytes.length());
+			}
 		}
 		
-		headerBytes[HEADER_SIZE-1] = (byte)this.paddingBits;
+		byte[] headerBytes = new byte[stringBits.size() + 1];
+		
+		for (int i = 0; i != stringBits.size(); ++i) {
+			headerBytes[i + 1] = (byte)Integer.parseInt(stringBits.get(i), 2);
+		}
+		
+		headerBytes[0] = (byte)this.paddingBits;
 		
 		return headerBytes;
 	}
 	
-	private TreeMap<Character, Integer> decodeHeader(byte[] encodedHeader) {
+	private TreeMap<Character, Integer> decodeHeader(byte[] encodedFileContent) {
 		HashMap<Character, Integer> frequencyTable = new HashMap<Character, Integer>();
-		int value = 0;
+		this.paddingBits = encodedFileContent[0] & 0xFF;
 		
-		for (int i = 0; i != HEADER_SIZE - 1; ++i) {
-			if ((value = encodedHeader[i] & 0xFF) != 0) {
-				frequencyTable.put((char)i, value);
+		StringBuilder sbEncodedHeader = new StringBuilder();
+		String padString = "00000000";
+		String encodedHeaderPart = "";
+		String encodedHeader = "";
+		
+		for (int i = 1; i != 33; ++i) {
+			encodedHeaderPart = Integer.toBinaryString(encodedFileContent[i] & 0xFF);
+			sbEncodedHeader.append(padString.substring(encodedHeaderPart.length()));
+			sbEncodedHeader.append(encodedHeaderPart);
+		}
+		
+		encodedHeader = sbEncodedHeader.toString();
+		
+		int[] frequencies = new int[256];
+		Arrays.fill(frequencies, 0);
+		int currentIndex = 33;
+		
+		
+		for (int i = 0; i != encodedHeader.length(); ++i) {
+			if (encodedHeader.charAt(i) == '1') {
+				StringBuilder sbEncodedFrequencies = new StringBuilder();
+				String frequencyPart = "";
+				frequencyPart = Integer.toBinaryString(encodedFileContent[currentIndex] & 0xFF);
+				sbEncodedFrequencies.append(padString.substring(frequencyPart.length()));
+				sbEncodedFrequencies.append(frequencyPart);
+				frequencyPart = Integer.toBinaryString(encodedFileContent[currentIndex+1] & 0xFF);
+				sbEncodedFrequencies.append(padString.substring(frequencyPart.length()));
+				sbEncodedFrequencies.append(frequencyPart);
+				frequencyPart = Integer.toBinaryString(encodedFileContent[currentIndex+2] & 0xFF);
+				sbEncodedFrequencies.append(padString.substring(frequencyPart.length()));
+				sbEncodedFrequencies.append(frequencyPart);
+				frequencyPart = Integer.toBinaryString(encodedFileContent[currentIndex+3] & 0xFF);
+				sbEncodedFrequencies.append(padString.substring(frequencyPart.length()));
+				sbEncodedFrequencies.append(frequencyPart);
+				currentIndex += 4;
+				
+				frequencyTable.put((char)i, Integer.parseInt(sbEncodedFrequencies.toString(), 2));
 			}
 		}
+		
+		this.encodedFileTextBeginIndex = currentIndex;
 		
 		MapValueComparator mapValueComparator = new MapValueComparator(frequencyTable);
 		TreeMap<Character, Integer> sortedFrequencyTable = new TreeMap<Character, Integer>(mapValueComparator);
 		sortedFrequencyTable.putAll(frequencyTable);
 		
-		System.out.println(sortedFrequencyTable);
-		
-		this.paddingBits = encodedHeader[HEADER_SIZE - 1] & 0xFF;
-		
 		return sortedFrequencyTable;
 	}
 	
-	//http://stackoverflow.com/questions/10572398/how-can-i-easily-compress-and-decompress-strings-to-from-byte-arrays
-	/*private byte[] compress(String text) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            OutputStream out = new DeflaterOutputStream(baos);
-            out.write(text.getBytes("UTF-8"));
-            out.close();
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-        return baos.toByteArray();
-    }
-	
-	private String decompress(byte[] bytes) {
-        InputStream in = new InflaterInputStream(new ByteArrayInputStream(bytes));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            byte[] buffer = new byte[8192];
-            int len;
-            while((len = in.read(buffer))>0)
-                baos.write(buffer, 0, len);
-            return new String(baos.toByteArray(), "UTF-8");
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }*/
 }
